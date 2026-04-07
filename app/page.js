@@ -55,38 +55,6 @@ function Mandala({ size = 140, color = "#c9a84c", opacity = 0.4 }) {
   );
 }
 
-function Lotus({ size = 52 }) {
-  return (
-    <svg width={size} height={size * 0.75} viewBox="0 0 90 68">
-      {[[-30, 2], [30, 2], [-16, -10], [16, -10], [0, -18]].map(([dx, dy], i) => (
-        <ellipse key={i}
-          cx={45 + dx} cy={46 + dy} rx="11" ry="18"
-          fill={["#e8607a", "#e8607a", "#f4a0b0", "#f4a0b0", "#fff8f8"][i]}
-          stroke="#c03060" strokeWidth="0.9"
-          transform={`rotate(${[-28, 28, -14, 14, 0][i]} ${45 + dx} ${46 + dy})`}
-          opacity="0.92"
-        />
-      ))}
-    </svg>
-  );
-}
-
-function GaneshIcon({ size = 56 }) {
-  return (
-    <svg width={size} height={size * 1.1} viewBox="0 0 56 62">
-      <ellipse cx="28" cy="38" rx="16" ry="20" fill="#f5a623" />
-      <circle cx="28" cy="16" r="12" fill="#f5a623" />
-      <ellipse cx="13" cy="21" rx="5.5" ry="11" fill="#f5a623" transform="rotate(-22 13 21)" />
-      <ellipse cx="43" cy="21" rx="5.5" ry="11" fill="#f5a623" transform="rotate(22 43 21)" />
-      <circle cx="22" cy="15" r="2.5" fill="#4a2800" />
-      <circle cx="34" cy="15" r="2.5" fill="#4a2800" />
-      <path d="M25 23 Q28 30 35 25" fill="none" stroke="#4a2800" strokeWidth="1.6" strokeLinecap="round" />
-      <circle cx="28" cy="10" r="4" fill="#e8607a" />
-      <circle cx="28" cy="10" r="2" fill="#fff" opacity="0.6" />
-    </svg>
-  );
-}
-
 function DiamondDivider({ color = "#c9a84c" }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "center", margin: "16px 0" }}>
@@ -123,12 +91,33 @@ function FloatingPetals() {
   );
 }
 
+// ── Infinite Horizontal Scroll Gallery ─────────────────────────
+function InfiniteGallery({ photos }) {
+  // Duplicate for seamless loop — first half scrolls out, second half seamlessly continues
+  const strip = [...photos, ...photos];
+  return (
+    <div className="gallery-viewport">
+      <div className="gallery-strip">
+        {strip.map((src, i) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={i}
+            src={src}
+            alt={`Moment ${(i % photos.length) + 1}`}
+            className="gallery-img"
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Main Component ───────────────────────────────────────────────
 export default function WeddingInvite() {
   const countdown = useCountdown(WEDDING_DATE);
   const [heroRef, heroIn] = useInView(0.1);
   const [inviteRef, inviteIn] = useInView(0.1);
-  const [carRef, carIn] = useInView(0.1);
+  const [carRef, carIn] = useInView(0.15);
   const [coupleRef, coupleIn] = useInView(0.1);
   const [countdownRef, countdownIn] = useInView(0.1);
   const [tajRef, tajIn] = useInView(0.05);
@@ -136,17 +125,28 @@ export default function WeddingInvite() {
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Place photos at /public/images/gallery/photo1.jpg … photo6.jpg
+  const galleryPhotos = [
+    "/images/gallery/photo1.jpg",
+    "/images/gallery/photo2.jpg",
+    "/images/gallery/photo3.jpg",
+    "/images/gallery/photo4.jpg",
+    "/images/gallery/photo5.jpg",
+    "/images/gallery/photo6.jpg",
+  ];
 
   return (
     <main style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", background: "#0d1a2a", margin: 0, padding: 0 }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,400;1,600&family=Cinzel+Decorative:wght@400;700&family=Pinyon+Script&display=swap');
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+        /* ─── Keyframes ─── */
         @keyframes petalFall {
           0%   { transform: translateY(-20px) rotate(0deg); opacity: 0.8; }
           100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
@@ -166,10 +166,6 @@ export default function WeddingInvite() {
           0%, 100% { opacity: 0.6; }
           50%       { opacity: 1; }
         }
-        @keyframes carDrive {
-          from { transform: translateX(-80px); opacity: 0; }
-          to   { transform: translateX(0px);  opacity: 1; }
-        }
         @keyframes rotateMandala {
           from { transform: rotate(0deg); }
           to   { transform: rotate(360deg); }
@@ -178,8 +174,7 @@ export default function WeddingInvite() {
           0%, 100% { transform: scale(1); }
           50%       { transform: scale(1.06); }
         }
-
-        /* CHANGED: corner gif pulse animation (replaces old wheel rotate) */
+        /* Corner GIF pulse animations */
         @keyframes cornerPulse {
           0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.92; }
           50%       { transform: scale(1.08) rotate(6deg); opacity: 1; }
@@ -188,13 +183,22 @@ export default function WeddingInvite() {
           0%, 100% { transform: scaleX(-1) scale(1) rotate(0deg); opacity: 0.92; }
           50%       { transform: scaleX(-1) scale(1.08) rotate(-6deg); opacity: 1; }
         }
-
-        /* NEW: CSS 3D wheel carousel for Section 3 */
-        @keyframes carouselSpin {
-          from { transform: perspective(900px) rotateY(0deg); }
-          to   { transform: perspective(900px) rotateY(360deg); }
+        /* Car: drives in from left, then floats gently */
+        @keyframes carDriveIn {
+          from { transform: translateX(-120px); opacity: 0; }
+          to   { transform: translateX(0px); opacity: 1; }
+        }
+        @keyframes carFloat {
+          0%, 100% { transform: translateY(0px); }
+          50%       { transform: translateY(-6px); }
+        }
+        /* Infinite gallery scroll — moves strip exactly 50% (one copy) leftward */
+        @keyframes scrollLeft {
+          from { transform: translateX(0); }
+          to   { transform: translateX(-50%); }
         }
 
+        /* ─── Scroll-reveal helpers ─── */
         .fade-up  { opacity: 0; }
         .fade-up.visible  { animation: fadeUp 0.9s ease forwards; }
         .fade-in  { opacity: 0; }
@@ -202,18 +206,95 @@ export default function WeddingInvite() {
         .scale-in { opacity: 0; }
         .scale-in.visible { animation: scaleIn 0.8s ease forwards; }
 
-        .couple-photo {
-          border-radius: 12px;
-          overflow: hidden;
-          border: 3px solid #c9a84c;
-          transition: transform 0.35s ease, box-shadow 0.35s ease;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-        }
-        .couple-photo:hover {
-          transform: translateY(-8px) scale(1.04);
-          box-shadow: 0 12px 36px rgba(201,168,76,0.45);
+        /* ─── Corner GIF — FIXED, does not scroll with page ─── */
+.corner-gif {
+  position: fixed !important;
+  top: 0;
+  width: clamp(180px, 22vw, 400px) !important;
+  height: auto;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.9;
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+.corner-gif-left {
+  left: -40px;
+  top: -20px;
+  transform-origin: top left;
+}
+
+.corner-gif-right {
+  right: -40px;
+  top: -20px;
+  transform-origin: top right;
+}
+
+        /* ─── Temple sides — hidden on mobile ─── */
+        @media (max-width: 768px) {
+          .temple-side { display: none !important; }
+          .hero-main-temple {
+            width: 96% !important;
+            max-width: 100% !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            display: flex !important;
+            justify-content: center !important;
+          }
+          .corner-gif {
+            width: clamp(110px, 28vw, 170px) !important;
+          }
         }
 
+        /* ─── Elephant overlay: bg watermark, below all text ─── */
+        /* z-index: 1 keeps it above bg but below text (z-index: 3) */
+        .elephant-overlay {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          transform: translate(-50%, -50%);
+          width: clamp(200px, 60vw, 440px);
+          z-index: 1;
+          opacity: 0.12;
+          pointer-events: none;
+          filter: sepia(0.4) drop-shadow(0 0 28px rgba(180,100,0,0.25));
+        }
+        .elephant-overlay img {
+          width: 100%;
+          height: auto;
+          display: block;
+        }
+
+        /* ─── King & Queen: pinned to left/right edges of Section 2 ─── */
+        .queen-side, .king-side {
+          position: absolute;
+          bottom: 0;
+          z-index: 2;
+          pointer-events: none;
+        }
+        .queen-side {
+          left: 0;
+          width: clamp(200px, 30vw, 420px);
+          filter: drop-shadow(6px 0 18px rgba(90,40,0,0.3));
+        }
+        .king-side {
+          right: 0;
+          width: clamp(200px, 30vw, 420px);
+          filter: drop-shadow(-6px 0 18px rgba(90,40,0,0.3));
+        }
+        .queen-side img, .king-side img {
+          width: 100%;
+          height: auto;
+          display: block;
+        }
+        @media (max-width: 768px) {
+          .queen-side, .king-side { display: none !important; }
+        }
+
+        /* ─── Route button ─── */
         .route-btn {
           display: inline-block;
           padding: 10px 32px;
@@ -234,6 +315,7 @@ export default function WeddingInvite() {
           letter-spacing: 3px;
         }
 
+        /* ─── Countdown ─── */
         .countdown-box {
           display: flex;
           flex-direction: column;
@@ -262,153 +344,151 @@ export default function WeddingInvite() {
           font-weight: 300;
           padding-bottom: 20px;
         }
-        html { scroll-behavior: smooth; }
 
-        /* ══════════════════════════════════════════════════════
-           CHANGED: Section 1 — corner-left.gif replaces wheel
-           Left corner: cornerPulse; right: cornerPulseR (mirrored)
-           ══════════════════════════════════════════════════════ */
-        .corner-gif {
-          position: absolute;
-          top: 12px;
-          width: 100px;
-          height: 100px;
-          z-index: 10;
-          pointer-events: none;
-        }
-        .corner-gif img {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-        }
-        .corner-gif-left {
-          left: 8px;
-          animation: cornerPulse 3.5s ease-in-out infinite;
-        }
-        /* CHANGED: right corner is scaleX(-1) mirrored */
-        .corner-gif-right {
-          right: 8px;
-          animation: cornerPulseR 3.5s ease-in-out 0.6s infinite;
-        }
-
-        /* CHANGED: temple sides hidden on mobile */
-        @media (max-width: 768px) {
-          .temple-side { display: none !important; }
-          .hero-main-temple {
-            width: 96% !important;
-            max-width: 100% !important;
-          }
-        }
-
-        /* ══════════════════════════════════════════════════════
-           NEW: Section 2 — elephant-overlay, queen, king images
-           ══════════════════════════════════════════════════════ */
-        .invite-figures-row {
+        /* ─── Car separator ─── */
+        /* Positioned at the color-transition boundary between Section 2 & 3 */
+        .car-separator {
           position: relative;
           width: 100%;
-          max-width: 560px;
-          display: flex;
-          align-items: flex-end;
-          justify-content: center;
-          margin-top: 28px;
-          gap: 0;
-        }
-        /* Queen — left side */
-        .figure-queen {
-          position: relative;
-          z-index: 3;
-          flex: 0 0 auto;
-          width: clamp(90px, 18vw, 140px);
-          margin-right: -20px;
-          margin-bottom: 0;
-          filter: drop-shadow(4px 0 12px rgba(90,40,0,0.25));
-          transition: transform 0.3s ease;
-        }
-        .figure-queen:hover { transform: scale(1.04) translateY(-4px); }
-        /* King — right side */
-        .figure-king {
-          position: relative;
-          z-index: 3;
-          flex: 0 0 auto;
-          width: clamp(90px, 18vw, 140px);
-          margin-left: -20px;
-          margin-bottom: 0;
-          filter: drop-shadow(-4px 0 12px rgba(90,40,0,0.25));
-          transition: transform 0.3s ease;
-        }
-        .figure-king:hover { transform: scale(1.04) translateY(-4px); }
-        /* Elephant — centered, overlaid between king & queen */
-        .figure-elephant {
-          position: relative;
-          z-index: 2;
-          flex: 0 0 auto;
-          width: clamp(160px, 36vw, 260px);
-          opacity: 0.78;
-          filter: drop-shadow(0 8px 20px rgba(90,40,0,0.22));
-          transition: opacity 0.4s ease;
-        }
-        .figure-elephant:hover { opacity: 0.95; }
-        .figure-queen img,
-        .figure-king img,
-        .figure-elephant img {
-          width: 100%;
-          height: auto;
-          display: block;
-        }
-
-        /* ══════════════════════════════════════════════════════
-           NEW: Section 3 — CSS 3D rotating wheel carousel
-           ══════════════════════════════════════════════════════ */
-        .carousel-scene {
-          width: 100%;
-          overflow: hidden;
           display: flex;
           justify-content: center;
           align-items: center;
-          /* tall enough to show 3D depth */
-          height: 320px;
-          margin-top: 36px;
-          perspective: 900px;
+          padding: 24px 0 20px;
+          overflow: hidden;
+          background: linear-gradient(180deg, #f0d9a0 0%, #2d5a3d 100%);
         }
-        .carousel-ring {
+        .car-image-wrap {
           position: relative;
-          width: 220px;
-          height: 220px;
-          transform-style: preserve-3d;
-          animation: carouselSpin 18s linear infinite;
+          width: clamp(200px, 48vw, 360px);
+          z-index: 4;
+          opacity: 0;
         }
-        /* Pause on hover anywhere inside the section */
-        .carousel-scene:hover .carousel-ring {
+        .car-image-wrap img {
+          width: 100%;
+          height: auto;
+          display: block;
+          filter:
+            drop-shadow(0 -6px 6px rgba(0,0,0,0.18))
+            drop-shadow(0 18px 32px rgba(0,0,0,0.55))
+            drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+          transform: perspective(600px) rotateX(6deg) translateY(-4px);
+          transform-origin: bottom center;
+          transition: transform 0.3s ease;
+        }
+        .car-image-wrap:hover img {
+          transform: perspective(600px) rotateX(3deg) translateY(-10px) scale(1.03);
+        }
+        /* Phase 1: drive in. Phase 2: float. car-drive class is added when in view. */
+        .car-drive {
+          animation:
+            carDriveIn 1s cubic-bezier(0.22,1,0.36,1) forwards,
+            carFloat 3.5s ease-in-out 1s infinite;
+        }
+        /* Route: slides up behind car (z-index 3 < car z-index 4) */
+        .route-reveal {
+          position: absolute;
+          bottom: 0;
+          left: 50%;
+          transform: translateX(-50%) translateY(100%);
+          z-index: 3;
+          width: clamp(180px, 55vw, 420px);
+          transition: transform 0.7s cubic-bezier(0.22,1,0.36,1), opacity 0.7s ease;
+          opacity: 0;
+          pointer-events: none;
+        }
+        .route-reveal.visible {
+          transform: translateX(-50%) translateY(30%);
+          opacity: 0.7;
+        }
+        .route-road {
+          width: 100%;
+          height: 28px;
+          background: repeating-linear-gradient(90deg,#4a3a1a 0px,#4a3a1a 32px,#c9a84c 32px,#c9a84c 64px);
+          border-radius: 4px;
+          box-shadow: 0 -4px 16px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.3);
+          position: relative;
+        }
+        .route-road::before {
+          content: '';
+          position: absolute;
+          top: 50%; left: 0; right: 0;
+          height: 3px;
+          background: repeating-linear-gradient(90deg,transparent 0,transparent 14px,#f5d07a 14px,#f5d07a 28px);
+          transform: translateY(-50%);
+          opacity: 0.5;
+        }
+
+        /* ─── Infinite horizontal gallery ─── */
+        .gallery-viewport {
+          width: 100%;
+          overflow: hidden;
+          margin-top: 36px;
+        }
+        /* The strip is 2x wide; scrollLeft moves it -50% = one full copy */
+        .gallery-strip {
+          display: flex;
+          gap: 16px;
+          width: max-content;
+          animation: scrollLeft 30s linear infinite;
+          padding: 8px 0;
+        }
+        /* Hover pauses on desktop */
+        .gallery-viewport:hover .gallery-strip {
           animation-play-state: paused;
         }
-        /* Each card is positioned around a circle via --i CSS var set inline */
-        .carousel-card {
-          position: absolute;
-          top: 0; left: 0;
-          width: 220px;
-          height: 220px;
-          border-radius: 14px;
-          overflow: hidden;
-          border: 3px solid #c9a84c;
-          box-shadow: 0 6px 24px rgba(0,0,0,0.5);
-          /* rotateY places each card; translateZ pushes it out to the ring radius */
-          backface-visibility: hidden;
-        }
-        .carousel-card img {
-          width: 100%;
-          height: 100%;
+        .gallery-img {
+          width: clamp(150px, 26vw, 250px);
+          height: clamp(150px, 26vw, 250px);
           object-fit: cover;
+          border-radius: 14px;
+          border: 3px solid #c9a84c;
+          box-shadow: 0 6px 24px rgba(0,0,0,0.45);
+          flex-shrink: 0;
+          transition: transform 0.35s ease, box-shadow 0.35s ease;
           display: block;
         }
-
-        @media (max-width: 768px) {
-          .carousel-scene { height: 220px; perspective: 600px; }
-          .carousel-ring  { width: 160px; height: 160px; }
-          .carousel-card  { width: 160px; height: 160px; }
+        .gallery-img:hover {
+          transform: translateY(-8px) scale(1.03);
+          box-shadow: 0 16px 40px rgba(201,168,76,0.5);
         }
+        @media (max-width: 768px) {
+          .gallery-img {
+            width: clamp(120px, 38vw, 190px);
+            height: clamp(120px, 38vw, 190px);
+          }
+          .gallery-strip {
+            animation-duration: 22s;
+            gap: 12px;
+          }
+        }
+
+        html { scroll-behavior: smooth; }
       `}</style>
 
-      {/* ── SECTION 1: HERO / TEMPLE ─────────────────────── */}
+      {/* ══════════════════════════════════════════════════════════════
+          FIXED CORNER GIFs
+          → Always stay in top corners regardless of scroll position
+          → Place image at: /public/images/corner-left.gif
+          ══════════════════════════════════════════════════════════════ */}
+      <div className="corner-gif corner-gif-left">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/images/corner-left.gif" alt="" />
+      </div>
+      <div className="corner-gif corner-gif-right">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/images/corner-left.gif" alt="" />
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════
+          SECTION 1: HERO / TEMPLE
+          Images:
+            /public/images/bg-texture.jpg
+            /public/images/temple.png
+            /public/images/temple side left.png   (desktop only)
+            /public/images/temple side right.png  (desktop only)
+            /public/images/temple-border.png
+            /public/images/ganesha.gif
+          ══════════════════════════════════════════════════════════════ */}
       <section ref={heroRef} style={{
         position: "relative",
         minHeight: "100vh",
@@ -417,15 +497,7 @@ export default function WeddingInvite() {
         alignItems: "center",
         overflow: "hidden",
       }}>
-        <div className="corner-gif corner-gif-left">
-  <img src="/images/corner-left.gif" alt="" />
-</div>
-
-<div className="corner-gif corner-gif-right">
-  <img src="/images/corner-left.gif" alt="" />
-</div>
-
-        {/* Background Image */}
+        {/* Parallax background */}
         <Image
           src="/images/bg-texture.jpg"
           alt="Temple Background"
@@ -434,44 +506,35 @@ export default function WeddingInvite() {
           priority
         />
 
-        {/* Dark Overlay */}
+        {/* Dark overlay */}
         <div style={{
           position: "absolute", inset: 0,
           background: `rgba(0,0,0,${0.5 - scrollY * 0.0005})`,
-          zIndex: 1
+          zIndex: 1,
         }} />
 
         <FloatingPetals />
 
-        {/* Gold border top */}
+        {/* Gold top border */}
         <div style={{
           width: "100%", height: 6,
           background: "linear-gradient(to right, #5a3000, #c9a84c, #f5d07a, #c9a84c, #5a3000)",
-          zIndex: 3
+          zIndex: 3,
         }} />
 
-
-        {/* LEFT TEMPLE — hidden on mobile via .temple-side */}
-        <div className="temple-side" style={{
-          position: "absolute", left: "0%", bottom: "150px", zIndex: 2,
-        }}>
-          <Image src="/images/temple side left.png" alt="Temple Left"
-            width={420} height={480}
-            style={{ width: "300px", height: "auto", objectFit: "contain" }}
-          />
+        {/* Left temple pillar — desktop only */}
+        <div className="temple-side" style={{ position: "absolute", left: "0%", bottom: "150px", zIndex: 2 }}>
+          <Image src="/images/temple side left.png" alt="Temple Left" width={420} height={480}
+            style={{ width: "300px", height: "auto", objectFit: "contain" }} />
         </div>
 
-        {/* RIGHT TEMPLE — hidden on mobile via .temple-side */}
-        <div className="temple-side" style={{
-          position: "absolute", right: "0%", bottom: "150px", zIndex: 2,
-        }}>
-          <Image src="/images/temple side right.png" alt="Temple Right"
-            width={420} height={480}
-            style={{ width: "300px", height: "auto", objectFit: "contain" }}
-          />
+        {/* Right temple pillar — desktop only */}
+        <div className="temple-side" style={{ position: "absolute", right: "0%", bottom: "150px", zIndex: 2 }}>
+          <Image src="/images/temple side right.png" alt="Temple Right" width={420} height={480}
+            style={{ width: "300px", height: "auto", objectFit: "contain" }} />
         </div>
 
-        {/* Mandala decorations — unchanged */}
+        {/* Rotating mandalas */}
         <div style={{ position: "absolute", top: 60, left: -30, animation: "rotateMandala 30s linear infinite", zIndex: 2 }}>
           <Mandala size={160} color="#c9a84c" opacity={0.3} />
         </div>
@@ -479,29 +542,24 @@ export default function WeddingInvite() {
           <Mandala size={160} color="#c9a84c" opacity={0.3} />
         </div>
 
-        {/* Title */}
+        {/* Ganesha + Title */}
         <div className={`fade-up${heroIn ? " visible" : ""}`} style={{ marginTop: 48, textAlign: "center", zIndex: 3 }}>
-          {/* CHANGED: replaced SVG GaneshIcon with ganesha.gif as central element */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/images/ganesha.gif"
             alt="Ganesha"
             style={{
-              width: "clamp(80px, 18vw, 120px)",
-              height: "auto",
-              display: "block",
-              margin: "0 auto 8px",
+              width: "clamp(80px, 18vw, 120px)", height: "auto",
+              display: "block", margin: "0 auto 8px",
               filter: "drop-shadow(0 4px 16px rgba(245,208,122,0.5))",
             }}
           />
           <h1 style={{
             fontFamily: "'Cinzel Decorative', serif",
             fontSize: "clamp(18px, 4vw, 28px)",
-            color: "#f5d07a",
-            letterSpacing: "0.25em",
+            color: "#f5d07a", letterSpacing: "0.25em",
             textShadow: "0 0 30px rgba(201,168,76,0.8)",
-            marginTop: 12,
-            lineHeight: 1.7,
+            marginTop: 12, lineHeight: 1.7,
           }}>
             GROOM<br />
             <span style={{ fontSize: "0.65em", color: "#e8d5a3", letterSpacing: "0.4em" }}>WEDS</span><br />
@@ -509,80 +567,97 @@ export default function WeddingInvite() {
           </h1>
         </div>
 
-        {/* MAIN TEMPLE */}
-<div className={`scale-in hero-main-temple${heroIn ? " visible" : ""}`} style={{
-  position: "relative",
-  zIndex: 3,
-  marginTop: 24,
-  width: "90%",
-  maxWidth: 550
-}}>
-  <Image
-    src="/images/temple.png"
-    alt="Temple Gopuram"
-    width={550}
-    height={650}
-    style={{
-      width: "min(550px, 80vw)",
-      height: "auto",
-      objectFit: "contain",
-      transform: `scale(${1.05 + scrollY * 0.0003})`,
-      transition: "transform 0.1s linear",
-      filter: "drop-shadow(0 8px 32px rgba(0,0,0,0.7))"
-    }}
-    priority
-  />
-</div>
+        {/* Main temple */}
+        <div className={`scale-in hero-main-temple${heroIn ? " visible" : ""}`} style={{
+          position: "relative", zIndex: 3, marginTop: 24, width: "90%", maxWidth: 550,
+          marginLeft: "auto", marginRight: "auto",
+        }}>
+          <Image
+            src="/images/temple.png"
+            alt="Temple Gopuram"
+            width={550} height={650}
+            style={{
+              width: "min(550px, 80vw)", height: "auto", objectFit: "contain",
+              transform: `scale(${1.05 + scrollY * 0.0003})`,
+              transition: "transform 0.1s linear",
+              filter: "drop-shadow(0 8px 32px rgba(0,0,0,0.7))",
+            }}
+            priority
+          />
+        </div>
 
-{/* ✅ BORDER BELOW TEMPLE */}
-<div style={{
-  width: "100%",
-  height: "100px",
-  backgroundImage: "url('/images/temple-border.png')",
-  backgroundRepeat: "repeat-x",
-  backgroundSize: "auto 100%",
-  backgroundPosition: "bottom",
-  marginTop: "-60px", // 🔥 tight to temple
-  zIndex: 2,
-  position: "relative",
-  boxShadow: "0 -10px 40px rgba(201,168,76,0.6)"
-}} />
-        
+        {/* Temple bottom border strip */}
+        <div style={{
+          width: "100%", height: "100px",
+          backgroundImage: "url('/images/temple-border.png')",
+          backgroundRepeat: "repeat-x", backgroundSize: "auto 100%", backgroundPosition: "bottom",
+          marginTop: "-60px", zIndex: 2, position: "relative",
+          boxShadow: "0 -10px 40px rgba(201,168,76,0.6)",
+        }} />
+      </section>
 
-      </section> 
-
-      {/* ── SECTION 2: INVITATION CARD ───────────────────── */}
+      {/* ══════════════════════════════════════════════════════════════
+          SECTION 2: INVITATION CARD
+          Images:
+            /public/images/temple-below.png
+            /public/images/ganesha.gif
+            /public/images/elephant overlay.png  ← watermark (centered bg)
+            /public/images/queen.png             ← pinned left edge
+            /public/images/king.jpg              ← pinned right edge
+          ══════════════════════════════════════════════════════════════ */}
       <section ref={inviteRef} style={{
         background: "linear-gradient(180deg, #f5e6c8 0%, #fdf3dc 50%, #f0d9a0 100%)",
         padding: "0 24px 0",
         display: "flex", flexDirection: "column", alignItems: "center",
         position: "relative", overflow: "hidden",
       }}>
+        {/* Top decorative band */}
         <div style={{
-  width: "100%",
-  height: "140px",
-  backgroundImage: "url('/images/temple-below.png')",
-  backgroundRepeat: "repeat-x",
-  backgroundSize: "auto 140%",
-  backgroundPosition: "top",
-  marginTop: "-60px", // 🔥 overlap nicely
-  position: "absolute",
-  zIndex: 2
-}} />
+          width: "100%", height: "140px",
+          backgroundImage: "url('/images/temple-below.png')",
+          backgroundRepeat: "repeat-x", backgroundSize: "auto 140%", backgroundPosition: "top",
+          marginTop: "-60px",
+          position: "absolute", top: 0, zIndex: 2, pointerEvents: "none",
+        }} />
 
-         <img
-            src="/images/ganesha.gif"
-            alt="Ganesha"
-            style={{
-              width: "clamp(80px, 18vw, 120px)",
-              height: "auto",
-              display: "block",
-              margin: "60px auto 8px",
-              filter: "drop-shadow(0 4px 16px rgba(245,208,122,0.5))",
-            }}
-          />
+        {/* ── ELEPHANT OVERLAY ──
+             Centered watermark. z-index: 1 keeps it ABOVE the bg gradient
+             but BELOW all text content which uses z-index: 3.
+             Image: /public/images/elephant overlay.png */}
+        <div className="elephant-overlay">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/elephant overlay.png" alt="" />
+        </div>
 
-        <div className={`fade-up${inviteIn ? " visible" : ""}`} style={{ textAlign: "center", animationDelay: "0.25s" }}>
+        {/* ── QUEEN — left edge ──
+             /public/images/queen.png */}
+        <div className="queen-side">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/queen.png" alt="Queen" />
+        </div>
+
+        {/* ── KING — right edge ──
+             /public/images/king.jpg */}
+        <div className="king-side">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/king.jpg" alt="King" />
+        </div>
+
+        {/* Ganesha */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/ganesha.gif" alt="Ganesha"
+          style={{
+            width: "clamp(80px, 18vw, 120px)", height: "auto",
+            display: "block", margin: "150px auto 8px",
+            filter: "drop-shadow(0 4px 16px rgba(245,208,122,0.5))",
+            position: "relative", zIndex: 3,
+          }}
+        />
+
+        {/* Invite text */}
+        <div className={`fade-up${inviteIn ? " visible" : ""}`}
+          style={{ textAlign: "center", animationDelay: "0.25s", position: "relative", zIndex: 3 }}>
           <p style={{
             fontFamily: "'Cormorant Garamond', serif",
             fontSize: "clamp(15px, 2.5vw, 18px)",
@@ -594,10 +669,13 @@ export default function WeddingInvite() {
           </p>
         </div>
 
-        <DiamondDivider color="#c9a84c" />
+        <div style={{ position: "relative", zIndex: 3 }}>
+          <DiamondDivider color="#c9a84c" />
+        </div>
 
         {/* Names */}
-        <div className={`scale-in${inviteIn ? " visible" : ""}`} style={{ textAlign: "center", animationDelay: "0.4s" }}>
+        <div className={`scale-in${inviteIn ? " visible" : ""}`}
+          style={{ textAlign: "center", animationDelay: "0.4s", position: "relative", zIndex: 3 }}>
           <h2 style={{
             fontFamily: "'Pinyon Script', cursive",
             fontSize: "clamp(52px, 10vw, 80px)",
@@ -613,10 +691,13 @@ export default function WeddingInvite() {
           }}>Kavya</h2>
         </div>
 
-        <DiamondDivider color="#c9a84c" />
+        <div style={{ position: "relative", zIndex: 3 }}>
+          <DiamondDivider color="#c9a84c" />
+        </div>
 
         {/* Date */}
-        <div className={`fade-up${inviteIn ? " visible" : ""}`} style={{ textAlign: "center", animationDelay: "0.55s" }}>
+        <div className={`fade-up${inviteIn ? " visible" : ""}`}
+          style={{ textAlign: "center", animationDelay: "0.55s", position: "relative", zIndex: 3 }}>
           <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, color: "#7a4a10", letterSpacing: 2 }}>on</p>
           <p style={{
             fontFamily: "'Cinzel Decorative', serif",
@@ -626,7 +707,8 @@ export default function WeddingInvite() {
         </div>
 
         {/* Venue */}
-        <div className={`fade-up${inviteIn ? " visible" : ""}`} style={{ textAlign: "center", marginTop: 24, animationDelay: "0.65s" }}>
+        <div className={`fade-up${inviteIn ? " visible" : ""}`}
+          style={{ textAlign: "center", marginTop: 24, animationDelay: "0.65s", position: "relative", zIndex: 3 }}>
           <p style={{
             fontFamily: "'Cinzel Decorative', serif",
             fontSize: "clamp(16px, 3.5vw, 26px)",
@@ -634,62 +716,55 @@ export default function WeddingInvite() {
             borderBottom: "2px solid #c9a84c", paddingBottom: 8,
           }}>venue address</p>
           <a
-            href="https://maps.google.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="route-btn"
-            style={{ marginTop: 18, display: "inline-block" }}
+            href="https://maps.google.com" target="_blank" rel="noopener noreferrer"
+            className="route-btn" style={{ marginTop: 18, display: "inline-block" }}
           >
             ✦ See the route ✦
           </a>
         </div>
 
-        {/* NEW: queen / elephant-overlay / king row — below wedding text block */}
-        <div className={`invite-figures-row fade-in${inviteIn ? " visible" : ""}`}
-          style={{ animationDelay: "0.75s" }}>
-
-          {/* Queen — left */}
-          <div className="figure-queen">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/queen.png" alt="Queen" />
-          </div>
-
-          {/* Elephant — center overlay */}
-          <div className="figure-elephant">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/elephant overlay.png" alt="Elephant" />
-          </div>
-
-          {/* King — right */}
-          <div className="figure-king">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/king.jpg" alt="King" />
-          </div>
-        </div>
-
-        {/* Vintage Car */}
-        <div ref={carRef} style={{
-          marginTop: 32, width: "80%", maxWidth: 340,
-          animation: carIn ? "carDrive 1s ease forwards" : "none",
-          opacity: carIn ? 1 : 0,
-        }}>
-          <Image
-            src="/car.png"
-            alt="Wedding Car"
-            width={340} height={200}
-            style={{ width: "100%", height: "auto", objectFit: "contain", filter: "drop-shadow(0 12px 24px rgba(0,0,0,0.25))" }}
-          />
-        </div>
-
-        {/* Wave into green section */}
-        <div style={{ width: "100%", overflow: "hidden", lineHeight: 0, marginTop: 16 }}>
-          <svg viewBox="0 0 500 60" preserveAspectRatio="none" style={{ display: "block", width: "100%", height: 60 }}>
-            <path d="M0,0 C125,60 375,60 500,0 L500,60 L0,60 Z" fill="#2d5a3d" />
-          </svg>
-        </div>
+        {/* Spacer so king/queen figures don't overlap content */}
+        <div style={{ height: "clamp(120px, 18vw, 220px)" }} />
       </section>
 
-      {/* ── SECTION 3: MEET THE COUPLE ───────────────────── */}
+      {/* ══════════════════════════════════════════════════════════════
+          CAR SEPARATOR
+          → Sits EXACTLY between Section 2 (warm gold) and Section 3 (forest green)
+          → Gradient bg bridges both colors seamlessly
+          → Car drives in from left, then gently floats
+          Image: /public/images/car.png
+          ══════════════════════════════════════════════════════════════ */}
+      <div className="car-separator">
+        {/* Top accent line */}
+        <div style={{
+          position: "absolute", top: 0, left: 0, right: 0, height: 2,
+          background: "linear-gradient(to right, transparent, #c9a84c, transparent)",
+        }} />
+
+        {/* Route road — z-index 3, slides up behind car */}
+        <div className={`route-reveal${carIn ? " visible" : ""}`}>
+          <div className="route-road" />
+        </div>
+
+        <div
+          ref={carRef}
+          className={`car-image-wrap${carIn ? " car-drive" : ""}`}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/car.png" alt="Wedding Car" />
+        </div>
+
+        {/* Bottom accent line */}
+        <div style={{
+          position: "absolute", bottom: 0, left: 0, right: 0, height: 2,
+          background: "linear-gradient(to right, transparent, #6aaa82, transparent)",
+        }} />
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════
+          SECTION 3: MEET THE COUPLE + INFINITE GALLERY
+          Photos: /public/images/gallery/photo1.jpg … photo6.jpg
+          ══════════════════════════════════════════════════════════════ */}
       <section ref={coupleRef} style={{
         background: "linear-gradient(180deg, #2d5a3d 0%, #1e4530 60%, #163825 100%)",
         padding: "48px 0 56px",
@@ -712,7 +787,7 @@ export default function WeddingInvite() {
           <DiamondDivider color="#c9a84c" />
         </div>
 
-        {/* Bio text */}
+        {/* Bio */}
         <div className={`fade-up${coupleIn ? " visible" : ""}`}
           style={{ maxWidth: 560, textAlign: "center", animationDelay: "0.25s", padding: "0 24px" }}>
           <p style={{
@@ -728,68 +803,22 @@ export default function WeddingInvite() {
           </p>
         </div>
 
-        {/* NEW: CSS 3D rotating wheel carousel — 6 photos arranged in a circle */}
-        {/* Hover anywhere on carousel-scene pauses rotation (pure CSS) */}
-        <div className={`carousel-scene fade-up${coupleIn ? " visible" : ""}`}
-          style={{ animationDelay: "0.4s" }}>
-
-          {(() => {
-            // 6 cards evenly spaced around 360° circle
-            // radius: desktop ~380px, mobile ~220px
-            // Each card rotateY(angle) translateZ(radius)
-            const photos = [
-              { src: "/couple1.jpg", filter: "" },
-              { src: "/couple2.jpg", filter: "" },
-              { src: "/couple1.jpg", filter: "sepia(0.35)" },
-              { src: "/couple2.jpg", filter: "hue-rotate(12deg)" },
-              { src: "/couple1.jpg", filter: "brightness(1.1) contrast(1.05)" },
-              { src: "/couple2.jpg", filter: "saturate(1.2)" },
-            ];
-            const count = photos.length;
-            // translateZ radius = (cardWidth/2) / tan(π/n)
-            // cardWidth desktop=220, n=6 → radius ≈ 220/(2*tan(30°)) ≈ 190px
-            // We'll set it via inline style on the ring
-            const radiusDesktop = 200;
-            return (
-              <div
-                className="carousel-ring"
-                style={{
-                  // The ring itself doesn't have a fixed size — cards are positioned via 3D
-                  width: "220px", height: "220px",
-                }}
-              >
-                {photos.map((p, i) => {
-                  const angle = (360 / count) * i;
-                  return (
-                    <div
-                      key={i}
-                      className="carousel-card"
-                      style={{
-                        transform: `rotateY(${angle}deg) translateZ(${radiusDesktop}px)`,
-                      }}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={p.src}
-                        alt={`Photo ${i + 1}`}
-                        style={{ filter: p.filter || undefined }}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })()}
+        {/* ── INFINITE SCROLLING GALLERY ──
+             Images scroll right-to-left continuously.
+             Hovering on desktop pauses the animation (CSS only, no JS).
+             Strip is doubled so the loop is seamless — no visible break.
+             Add your photos at: /public/images/gallery/photo1–6.jpg */}
+        <div className={`fade-up${coupleIn ? " visible" : ""}`}
+          style={{ width: "100%", animationDelay: "0.4s" }}>
+          <InfiniteGallery photos={galleryPhotos} />
         </div>
 
-        {/* NEW: hint label */}
         <p style={{
           fontFamily: "'Cormorant Garamond', serif",
           fontSize: 12, letterSpacing: "0.3em",
           color: "#6aaa82", marginTop: 16, fontStyle: "italic",
           textTransform: "uppercase",
-        }}>Hover to pause · Moments</p>
-
+        }}>Hover to pause · Our Moments</p>
       </section>
 
       {/* ── SECTION 4: COUNTDOWN ─────────────────────────── */}
@@ -854,8 +883,7 @@ export default function WeddingInvite() {
         {Array.from({ length: 24 }).map((_, i) => (
           <div key={i} style={{
             position: "absolute",
-            top: `${(i * 13.7) % 60}%`,
-            left: `${(i * 17.3 + 5) % 95}%`,
+            top: `${(i * 13.7) % 60}%`, left: `${(i * 17.3 + 5) % 95}%`,
             width: i % 3 === 0 ? 3 : 2, height: i % 3 === 0 ? 3 : 2,
             borderRadius: "50%", background: "#fff",
             opacity: 0.4 + (i % 5) * 0.1,
@@ -879,7 +907,7 @@ export default function WeddingInvite() {
 
         <div className={`scale-in${tajIn ? " visible" : ""}`} style={{ width: "100%", maxWidth: 500, animationDelay: "0.3s" }}>
           <Image
-            src="/taj.png" alt="Taj Mahal" width={500} height={340}
+            src="/images/taj.png" alt="Taj Mahal" width={500} height={340}
             style={{ width: "100%", height: "auto", objectFit: "contain", filter: "drop-shadow(0 -8px 40px rgba(201,168,76,0.3))" }}
           />
         </div>
